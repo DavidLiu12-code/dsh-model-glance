@@ -1,22 +1,41 @@
 # ModelGlance
 
-**A refined, lightweight model picker for DeepSeek Harness.**
-
-ModelGlance replaces the small model button in the composer with a two-mode picker: a
-compact single-column popover for everyday switching, and a wider panel with a provider
-sidebar for browsing. It is a thin skin over the model selection DSH already ships — it
-reads the host's model catalog and asks the host to switch. It never stores credentials,
-never talks to the network, and never touches your provider configuration.
-
-<p align="center">
-  <img src="docs/images/compact-light.png" alt="Compact model picker, light theme" width="620">
-</p>
-<p align="center">
-  <img src="docs/images/expanded-dark.png" alt="Expanded panel with provider sidebar, dark theme" width="760">
+<p align="left">
+  <strong>English</strong> &nbsp;|&nbsp; <a href="README.zh-CN.md">简体中文</a>
 </p>
 
-> Screenshots are from an isolated test profile with a demo catalog. They show the plugin
-> itself; your providers and models will differ.
+**A refined, Apple / Arc inspired model picker for DeepSeek Harness.**
+
+ModelGlance replaces the small model button in the composer with a frosted liquid-glass,
+two-mode picker: a compact popover for everyday switching, and an integrated Command Bar
+panel with a provider sidebar for browsing. It is a thin skin over the model selection DSH
+already ships — it reads the host's model catalog and asks the host to switch. It never
+stores credentials, never talks to the network, and never touches your provider configuration.
+
+## Preview
+
+<p align="center">
+  <img src="docs/images/compact-light.png" alt="Compact popover in light theme with pinned horizontal provider rail and brand badges" width="420"><br>
+  <sub><b>Compact Popover (Light)</b> — Pinned "All" chip + horizontally scrollable provider rail, curated brand color badges, and unified effort dock.</sub>
+</p>
+
+<p align="center">
+  <img src="docs/images/expanded-light.png" alt="Expanded two-pane panel in light theme" width="760"><br>
+  <sub><b>Expanded Panel (Light)</b> — Integrated top Command Bar, color-coded provider sidebar, and continuous model list.</sub>
+</p>
+
+<p align="center">
+  <img src="docs/images/compact-dark.png" alt="Compact popover in dark theme" width="760"><br>
+  <sub><b>Compact Popover (Dark)</b> — Frosted liquid-glass surface with sliding reasoning effort pill, automatically following DSH's dark theme.</sub>
+</p>
+
+<p align="center">
+  <img src="docs/images/expanded-dark.png" alt="Expanded two-pane panel in dark theme" width="760"><br>
+  <sub><b>Expanded Panel (Dark)</b> — Two-pane frosted layout with monochrome chrome and restrained brand accents.</sub>
+</p>
+
+> Screenshots show the plugin running in DeepSeek Harness. Providers and models come strictly
+> from your live DSH session — unconfigured providers are never shown.
 
 ## Why
 
@@ -28,23 +47,29 @@ model choice into a management console.
 
 ## Features
 
-- **Two modes.** A compact popover anchored to the composer's model button, and an
-  expanded panel with a narrow provider sidebar and a continuous list.
-- **Search and provider filter.** Case-insensitive, matches name, id and description.
-- **Favourites and recents.** Stored locally as `<provider>/<model>` ids only. The model
-  currently in use seeds the recents list; there is no host history API, so usage from
-  before the plugin was installed cannot be reconstructed.
-- **Only real effort levels.** The host decides which reasoning efforts a model advertises.
-  When a model has no reasoning metadata, the whole effort row is absent — ModelGlance
-  never invents a level.
-- **Follows your theme.** Every colour is a host `--dsw-alias-*` token or a `color-mix()`
-  derived from one, so light and dark come from the host's own appearance setting.
-- **Keyboard.** `↑`/`↓` to move, `Enter` to switch, `Esc` to close and return focus,
-  `→`/`←` to move between the compact and expanded modes. No global shortcuts are
-  registered, so nothing collides with the command palette.
+- **Apple / Arc liquid-glass UI.** Frosted translucent surface, unified bottom dock in the
+  compact popover, and an integrated Command Bar header in the expanded panel.
+- **Pinned horizontal provider rail.** When multiple providers are configured, "All" stays
+  pinned on the left while providers scroll smoothly horizontally (including mouse wheel
+  scroll) with soft edge fade masks. Automatically hidden when only one provider is active.
+- **Curated brand color badges.** Built-in restrained tonal colors & monograms for 30+
+  model providers and aggregators (DeepSeek Account vs. DeepSeek API, OpenCode Go,
+  OpenDesign Go, Command Code Go / GOAT, OpenRouter, SiliconFlow, Anthropic, OpenAI,
+  Gemini, GLM, Qwen, Kimi, MiniMax, Ollama, etc.), plus a deterministic 10-color fallback
+  palette for any custom third-party provider.
+- **Search, favourites and recents.** Case-insensitive search across name, id, provider and
+  description. Favourites and recents are stored locally as `<provider>/<model>` ids only.
+- **Only real effort levels.** The host decides which reasoning efforts a model advertises,
+  rendered with a smooth sliding pill control. When a model has no reasoning metadata, the
+  effort control is hidden — ModelGlance never invents a level.
+- **Follows your theme.** Every surface colour derives from DSH `--dsw-alias-*` tokens via
+  `color-mix()`, automatically syncing with the host's light/dark appearance.
+- **Keyboard.** `↑`/`↓` to move (with auto-scroll into view), `Enter` to switch, `Esc` to
+  close and return focus, `→`/`←` to toggle between compact and expanded modes. No global
+  shortcuts are registered.
 - **Honest about failure.** A rejected switch keeps the previous model, keeps the panel
-  open, and shows what the host said. A successful switch closes the compact popover and
-  keeps the expanded panel open.
+  open, and shows the host's error. A successful switch closes the compact popover and keeps
+  the expanded panel open.
 
 ## Install
 
