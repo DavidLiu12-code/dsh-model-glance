@@ -1,5 +1,5 @@
 // ModelGlance — client half.
-// A refined, lightweight model picker for DeepSeek Harness.
+// An Apple / Arc inspired, quiet-luxury model picker for DeepSeek Harness.
 //
 // Security posture: this file has no filesystem, shell, process or network
 // access. It only reads the session model directory through the seat face the
@@ -32,8 +32,8 @@ window.__ModuleLoader__.load({
       'trigger.ariaEmpty': '选择模型',
       'trigger.ariaEffort': '推理强度：{effort}',
       'menu.aria': '模型选择',
-      'search.placeholder': '搜索模型',
-      'search.placeholderWide': '搜索模型或提供商',
+      'search.placeholder': '搜索模型…',
+      'search.placeholderWide': '搜索模型名称、提供商或简介…',
       'search.clear': '清除搜索',
       'group.favorites': '我的收藏',
       'group.recent': '最近使用',
@@ -41,18 +41,26 @@ window.__ModuleLoader__.load({
       'nav.all': '全部模型',
       'nav.favorites': '我的收藏',
       'nav.recent': '最近使用',
-      'nav.providers': '按提供商',
+      'nav.providers': '提供商',
       'effort.label': '推理强度',
       'effort.note': '档位越高，思考越久',
+      'effort.none': '该模型未声明推理档位',
+      'effort.supported': '支持推理强度调节',
       'effort.default': 'Default',
       'current.label': '当前',
-      'action.expand': '展开全部模型',
-      'action.collapse': '收起',
+      'count.available': '{count} 个可用模型',
+      'action.expand': '全部',
+      'action.expandTitle': '展开全部模型',
+      'action.collapse': '收起为紧凑弹窗',
       'action.close': '关闭',
       'action.retry': '重试',
       'action.reload': '重新加载',
+      'favorite.add': '收藏模型',
+      'favorite.remove': '取消收藏',
       'status.loading': '正在加载模型…',
       'status.empty': '没有匹配的模型',
+      'status.emptyFavorites': '悬停模型行并点击星标即可收藏',
+      'status.emptyRecent': '暂无最近使用记录',
       'status.emptyCatalog': '没有可用的模型',
       'status.unavailable': '当前会话不可用',
       'error.switch': '切换失败，仍在用原来的模型（{message}）',
@@ -66,8 +74,8 @@ window.__ModuleLoader__.load({
       'trigger.ariaEmpty': 'Select model',
       'trigger.ariaEffort': 'Reasoning effort: {effort}',
       'menu.aria': 'Model selection',
-      'search.placeholder': 'Search models',
-      'search.placeholderWide': 'Search models or providers',
+      'search.placeholder': 'Search models…',
+      'search.placeholderWide': 'Search models, providers, or descriptions…',
       'search.clear': 'Clear search',
       'group.favorites': 'Favorites',
       'group.recent': 'Recent',
@@ -75,18 +83,26 @@ window.__ModuleLoader__.load({
       'nav.all': 'All models',
       'nav.favorites': 'Favorites',
       'nav.recent': 'Recent',
-      'nav.providers': 'By provider',
+      'nav.providers': 'Providers',
       'effort.label': 'Effort',
       'effort.note': 'Higher means longer thinking',
+      'effort.none': 'No reasoning efforts advertised',
+      'effort.supported': 'Supports reasoning effort',
       'effort.default': 'Default',
       'current.label': 'Current',
-      'action.expand': 'Browse all models',
-      'action.collapse': 'Collapse',
+      'count.available': '{count} models available',
+      'action.expand': 'All',
+      'action.expandTitle': 'Browse all models',
+      'action.collapse': 'Collapse to popover',
       'action.close': 'Close',
       'action.retry': 'Retry',
       'action.reload': 'Reload',
+      'favorite.add': 'Favorite model',
+      'favorite.remove': 'Remove favorite',
       'status.loading': 'Loading models…',
       'status.empty': 'No matching model',
+      'status.emptyFavorites': 'Hover a model and click the star to favorite it',
+      'status.emptyRecent': 'No recently used models yet',
       'status.emptyCatalog': 'No models available',
       'status.unavailable': 'This session is unavailable',
       'error.switch': 'Switch failed, still using the previous model ({message})',
@@ -131,6 +147,82 @@ window.__ModuleLoader__.load({
 
     const rowKey = (provider, model) => provider + '/' + model
 
+    // Curated Apple-grade restrained brand color & monogram mapping.
+    // Unknown third-party providers deterministically hash into a 10-color low-saturation palette.
+    const FALLBACK_BRANDS = [
+      '#3B7BF6', '#0D9488', '#7C5CFA', '#C96442', '#109472',
+      '#D44D8A', '#C88218', '#5264F0', '#0284C7', '#E05275',
+    ]
+
+    const BRAND_RULES = [
+      { test: (id, s) => id === 'deepseek-account' || (/deepseek/i.test(s) && /账号|account/i.test(s)), mono: 'DS', color: '#3B7BF6' },
+      { test: (id, s) => /deepseek/i.test(s) && /api/i.test(s), mono: 'API', color: '#0D9488' },
+      { test: (id, s) => /deepseek/i.test(s), mono: 'DS', color: '#3B7BF6' },
+      { test: (id, s) => /opencode/i.test(s), mono: 'OG', color: '#7C5CFA' },
+      { test: (id, s) => /opendesign/i.test(s), mono: 'OD', color: '#D44D8A' },
+      { test: (id, s) => /commandcode/i.test(s), mono: 'CC', color: '#C88218' },
+      { test: (id, s) => /\bgoat\b|goat-/i.test(s), mono: 'GT', color: '#B87333' },
+      { test: (id, s) => /openrout/i.test(s), mono: 'OR', color: '#6C5CE7' },
+      { test: (id, s) => /silicon|硅基/i.test(s), mono: 'SF', color: '#5B6CFA' },
+      { test: (id, s) => /anthropic|claude/i.test(s), mono: 'AN', color: '#C96442' },
+      { test: (id, s) => /azure/i.test(s), mono: 'AZ', color: '#0078D4' },
+      { test: (id, s) => /openai/i.test(s), mono: 'OA', color: '#109472' },
+      { test: (id, s) => /vertex/i.test(s), mono: 'VX', color: '#0D9488' },
+      { test: (id, s) => /google|gemini/i.test(s), mono: 'GM', color: '#5264F0' },
+      { test: (id, s) => /zhipu|glm|智谱/i.test(s), mono: 'GL', color: '#4263EB' },
+      { test: (id, s) => /qwen|dashscope|alibaba|aliyun|通义|百炼/i.test(s), mono: 'QW', color: '#8655E8' },
+      { test: (id, s) => /moonshot|kimi|月之暗面/i.test(s), mono: 'KM', color: '#0284C7' },
+      { test: (id, s) => /minimax/i.test(s), mono: 'MM', color: '#E05275' },
+      { test: (id, s) => /volc|doubao|bytedance|ark|豆包|火山/i.test(s), mono: 'DB', color: '#2589F5' },
+      { test: (id, s) => /stepfun|阶跃/i.test(s), mono: 'ST', color: '#D97706' },
+      { test: (id, s) => /hunyuan|tencent|混元|腾讯/i.test(s), mono: 'HY', color: '#0F9D8A' },
+      { test: (id, s) => /groq/i.test(s), mono: 'GQ', color: '#E05A2B' },
+      { test: (id, s) => /mistral/i.test(s), mono: 'MS', color: '#D96B27' },
+      { test: (id, s) => /together/i.test(s), mono: 'TG', color: '#3B6CE8' },
+      { test: (id, s) => /fireworks/i.test(s), mono: 'FW', color: '#9333EA' },
+      { test: (id, s) => /cloudflare/i.test(s), mono: 'CF', color: '#EA6A1F' },
+      { test: (id, s) => /bedrock|aws/i.test(s), mono: 'AW', color: '#D97706' },
+      { test: (id, s) => /hugging/i.test(s), mono: 'HF', color: '#D4940A' },
+      { test: (id, s) => /perplexity/i.test(s), mono: 'PX', color: '#0E8A8A' },
+      { test: (id, s) => /xai|grok/i.test(s), mono: 'XA', color: '#6B7280' },
+      { test: (id, s) => /ollama/i.test(s), mono: 'OL', color: '#78716C' },
+      { test: (id, s) => /lmstudio|lm-studio/i.test(s), mono: 'LM', color: '#78716C' },
+      { test: (id, s) => /vllm/i.test(s), mono: 'VL', color: '#64748B' },
+    ]
+
+    function hashString(text) {
+      let hash = 2166136261
+      for (let i = 0; i < text.length; i += 1) {
+        hash ^= text.charCodeAt(i)
+        hash = Math.imul(hash, 16777619)
+      }
+      return hash >>> 0
+    }
+
+    function providerMonogram(name, id) {
+      const rawName = String(name || id || '').trim()
+      const asciiWords = rawName.match(/[A-Za-z0-9]+/g)
+      if (asciiWords && asciiWords.length >= 2) {
+        return (asciiWords[0][0] + asciiWords[1][0]).toUpperCase()
+      }
+      if (asciiWords && asciiWords.length === 1) {
+        return asciiWords[0].slice(0, 2).toUpperCase()
+      }
+      return rawName.slice(0, 1).toUpperCase() || 'M'
+    }
+
+    function providerBrand(name, id) {
+      const combined = String(id || '') + ' ' + String(name || '')
+      for (const rule of BRAND_RULES) {
+        if (rule.test(id, combined)) return { mono: rule.mono, color: rule.color }
+      }
+      const key = String(id || name || 'provider').toLowerCase()
+      return {
+        mono: providerMonogram(name, id),
+        color: FALLBACK_BRANDS[hashString(key) % FALLBACK_BRANDS.length],
+      }
+    }
+
     // The host can carry a verbose error payload; keep one readable line.
     function tidyDetail(value) {
       const text = typeof value === 'string' ? value : String(value === undefined ? '' : value)
@@ -140,150 +232,235 @@ window.__ModuleLoader__.load({
 
     // ----------------------------------------------------------------- icons
 
-    const svg = (props, children) =>
-      h('svg', Object.assign({ viewBox: '0 0 16 16', 'aria-hidden': 'true', focusable: 'false' }, props), children)
+    const svg = (props, ...children) =>
+      h('svg', Object.assign({ viewBox: '0 0 16 16', 'aria-hidden': 'true', focusable: 'false' }, props), ...children)
 
     const iconChevron = () =>
-      svg({ width: 12, height: 12, fill: 'none', stroke: 'currentColor', strokeWidth: 1.5, className: 'mg-chevron' },
-        h('path', { d: 'M4 6.5 8 10.5 12 6.5', strokeLinecap: 'round', strokeLinejoin: 'round' }))
+      svg({ width: 11, height: 11, fill: 'none', stroke: 'currentColor', strokeWidth: 1.6, className: 'mg-chevron' },
+        h('path', { d: 'M4.2 6.5 8 10.2 11.8 6.5', strokeLinecap: 'round', strokeLinejoin: 'round' }))
 
     const iconCheck = () =>
-      svg({ width: 12, height: 12, fill: 'none', stroke: 'currentColor', strokeWidth: 1.6 },
-        h('path', { d: 'M3 8.5 6.2 11.6 13 4.6', strokeLinecap: 'round', strokeLinejoin: 'round' }))
+      svg({ width: 13, height: 13, fill: 'none', stroke: 'currentColor', strokeWidth: 1.8 },
+        h('path', { d: 'M3.2 8.5 6.4 11.7 13 4.8', strokeLinecap: 'round', strokeLinejoin: 'round' }))
 
     const iconStar = (filled) =>
-      svg({ width: 13, height: 13, fill: filled ? 'currentColor' : 'none', stroke: 'currentColor', strokeWidth: 1.2, strokeLinejoin: 'round' },
-        h('path', { d: 'M8 2.2 9.7 5.9 13.7 6.4 10.8 9.2 11.6 13.1 8 11.1 4.4 13.1 5.2 9.2 2.3 6.4 6.3 5.9Z' }))
+      svg({ width: 13, height: 13, fill: filled ? 'currentColor' : 'none', stroke: 'currentColor', strokeWidth: 1.3, strokeLinejoin: 'round' },
+        h('path', { d: 'M8 2.1 9.8 5.8 13.8 6.4 10.9 9.2 11.6 13.2 8 11.3 4.4 13.2 5.1 9.2 2.2 6.4 6.2 5.8Z' }))
+
+    const iconSpark = () =>
+      svg({ width: 10, height: 10, fill: 'currentColor', className: 'mg-spark-svg' },
+        h('path', { d: 'M8 1.5 9.6 6.4 14.5 8 9.6 9.6 8 14.5 6.4 9.6 1.5 8 6.4 6.4Z' }))
 
     const iconClose = () =>
       svg({ width: 13, height: 13, fill: 'none', stroke: 'currentColor', strokeWidth: 1.5 },
-        h('path', { d: 'M4 4 12 12M12 4 4 12', strokeLinecap: 'round' }))
+        h('path', { d: 'M4.2 4.2 11.8 11.8M11.8 4.2 4.2 11.8', strokeLinecap: 'round' }))
 
     const iconCollapse = () =>
-      svg({ width: 13, height: 13, fill: 'none', stroke: 'currentColor', strokeWidth: 1.5 },
-        h('path', { d: 'M4 9.5 8 5.5 12 9.5', strokeLinecap: 'round', strokeLinejoin: 'round' }))
+      svg({ width: 13, height: 13, fill: 'none', stroke: 'currentColor', strokeWidth: 1.5, strokeLinecap: 'round', strokeLinejoin: 'round' },
+        h('path', { d: 'M10 3.5H12.5V6' }),
+        h('path', { d: 'M12.5 3.5 9 7' }),
+        h('path', { d: 'M6 12.5H3.5V10' }),
+        h('path', { d: 'M3.5 12.5 7 9' }))
 
-    const iconArrowRight = () =>
-      svg({ width: 12, height: 12, fill: 'none', stroke: 'currentColor', strokeWidth: 1.5 },
-        h('path', { d: 'M6 4 10 8 6 12', strokeLinecap: 'round', strokeLinejoin: 'round' }))
+    const iconArrowUpRight = () =>
+      svg({ width: 11, height: 11, fill: 'none', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round', strokeLinejoin: 'round' },
+        h('path', { d: 'M5 11 11 5M6 5h5v5' }))
 
     const iconSearch = () =>
-      svg({ width: 12, height: 12, fill: 'none', stroke: 'currentColor', strokeWidth: 1.4, className: 'mg-search-icon' },
-        h('circle', { cx: 7, cy: 7, r: 4.2 }),
-        h('path', { d: 'M10.2 10.2 13.4 13.4', strokeLinecap: 'round' }))
+      svg({ width: 14, height: 14, fill: 'none', stroke: 'currentColor', strokeWidth: 1.5, className: 'mg-search-icon' },
+        h('circle', { cx: 7.2, cy: 7.2, r: 4.5 }),
+        h('path', { d: 'M10.6 10.6 13.8 13.8', strokeLinecap: 'round' }))
 
-    // Corner arrow pair: a second way to open the full list, without repeating
-    // the words that already sit in the compact body.
-    const iconExpand = () =>
-      svg({ width: 14, height: 14, viewBox: '0 0 12 12', fill: 'none', stroke: 'currentColor', strokeWidth: 1.4, strokeLinecap: 'round', strokeLinejoin: 'round' },
-        h('path', { d: 'M4.6 2.8H2.6v2' }),
-        h('path', { d: 'M2.8 2.8 5.4 5.4' }),
-        h('path', { d: 'M7.4 9.2h2v-2' }),
-        h('path', { d: 'M9.2 9.2 6.6 6.6' }))
+    const iconGrid = () =>
+      svg({ width: 13, height: 13, fill: 'none', stroke: 'currentColor', strokeWidth: 1.4, className: 'mg-nav-ico' },
+        h('rect', { x: 2.5, y: 2.5, width: 4.5, height: 4.5, rx: 1.2 }),
+        h('rect', { x: 9, y: 2.5, width: 4.5, height: 4.5, rx: 1.2 }),
+        h('rect', { x: 2.5, y: 9, width: 4.5, height: 4.5, rx: 1.2 }),
+        h('rect', { x: 9, y: 9, width: 4.5, height: 4.5, rx: 1.2 }))
+
+    const iconClock = () =>
+      svg({ width: 13, height: 13, fill: 'none', stroke: 'currentColor', strokeWidth: 1.4, strokeLinecap: 'round', className: 'mg-nav-ico' },
+        h('circle', { cx: 8, cy: 8, r: 5.5 }),
+        h('path', { d: 'M8 4.8V8L10.2 9.4' }))
+
+    const iconAlert = () =>
+      svg({ width: 13, height: 13, fill: 'none', stroke: 'currentColor', strokeWidth: 1.5, strokeLinecap: 'round', className: 'mg-alert-ico' },
+        h('circle', { cx: 8, cy: 8, r: 5.8 }),
+        h('path', { d: 'M8 5.2v3.3M8 11h.01' }))
 
     // ------------------------------------------------------------------- CSS
+    // Apple / Arc Liquid-Glass Aesthetic — strictly derived from DSH --dsw-alias-* tokens
 
     const CSS = `
-.mg-trigger{display:inline-flex;align-items:center;gap:6px;min-width:0;max-width:100%;height:26px;padding:0 6px;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;line-height:1;cursor:pointer}
+.mg-trigger{display:inline-flex;align-items:center;gap:6px;min-width:0;max-width:100%;height:28px;padding:0 9px;border:0;border-radius:999px;background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;font-weight:500;letter-spacing:-.012em;line-height:1;cursor:pointer}
 .mg-trigger:hover:not(:disabled){background:color-mix(in srgb,var(--dsw-alias-label-primary) 5%,transparent)}
+.mg-trigger[aria-expanded="true"]{background:color-mix(in srgb,var(--dsw-alias-label-primary) 7%,transparent);box-shadow:inset 0 0 0 .5px color-mix(in srgb,var(--dsw-alias-label-primary) 10%,transparent)}
 .mg-trigger:disabled{opacity:.55;cursor:default}
 .mg-trigger:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px}
 .mg-trigger-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px}
-.mg-trigger-effort{flex:none;display:inline-flex;align-items:center;height:20px;padding:0 8px;border:1px solid var(--dsw-alias-border-l1);border-radius:999px;color:var(--dsw-alias-label-secondary);font-size:11px;font-weight:500;line-height:1}
-.mg-trigger:hover:not(:disabled) .mg-trigger-effort{border-color:var(--dsw-alias-label-secondary);color:var(--dsw-alias-label-primary)}
-.mg-chevron{flex:none;color:var(--dsw-alias-label-secondary)}
-.mg-pop{--mg-line:color-mix(in srgb,var(--dsw-alias-label-primary) 9%,transparent);position:relative;min-height:0;z-index:2147483000;display:flex;flex-direction:column;box-sizing:border-box;border:1px solid var(--mg-line);border-radius:10px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);box-shadow:0 12px 32px rgba(0,0,0,.12),0 2px 8px rgba(0,0,0,.06);font-size:13px;line-height:1.45;text-align:left}
+.mg-trigger-dot{flex:none;width:6px;height:6px;border-radius:999px;background:var(--mg-brand,var(--dsw-alias-brand-primary));opacity:.9}
+.mg-trigger-effort{flex:none;display:inline-flex;align-items:center;gap:3px;height:19px;padding:0 7px;border:0;border-radius:999px;background:color-mix(in srgb,var(--dsw-alias-label-primary) 6%,transparent);color:var(--dsw-alias-label-secondary);font-size:10.5px;font-weight:550;letter-spacing:.01em;line-height:1}
+.mg-trigger:hover:not(:disabled) .mg-trigger-effort{color:var(--dsw-alias-label-primary)}
+.mg-chevron{flex:none;color:var(--dsw-alias-label-secondary);opacity:.8}
+.mg-spark-svg{flex:none;opacity:.8}
+
+.mg-pop{
+  --mg-hair:color-mix(in srgb,var(--dsw-alias-label-primary) 8%,transparent);
+  --mg-hair-soft:color-mix(in srgb,var(--dsw-alias-label-primary) 5.5%,transparent);
+  --mg-hover:color-mix(in srgb,var(--dsw-alias-label-primary) 4.5%,transparent);
+  --mg-active:color-mix(in srgb,var(--dsw-alias-label-primary) 7.5%,transparent);
+  --mg-track:color-mix(in srgb,var(--dsw-alias-label-primary) 5.5%,transparent);
+  --mg-surface:color-mix(in srgb,var(--dsw-alias-bg-base) 86%,transparent);
+  --mg-rail:color-mix(in srgb,var(--dsw-alias-bg-layer-1,var(--dsw-alias-bg-base)) 72%,transparent);
+  --mg-dock:color-mix(in srgb,var(--dsw-alias-bg-layer-1,var(--dsw-alias-bg-base)) 76%,transparent);
+  --mg-tint-bg:12%;
+  --mg-tint-ring:22%;
+  --mg-chip-tint:13%;
+  position:relative;min-height:0;z-index:2147483000;display:flex;flex-direction:column;box-sizing:border-box;
+  border:0;border-radius:18px;overflow:hidden;
+  background:var(--mg-surface);
+  backdrop-filter:blur(34px) saturate(185%);-webkit-backdrop-filter:blur(34px) saturate(185%);
+  color:var(--dsw-alias-label-primary);
+  box-shadow:0 30px 70px -16px rgba(15,23,42,.20),0 10px 24px -8px rgba(15,23,42,.08),0 0 0 .5px color-mix(in srgb,var(--dsw-alias-label-primary) 11%,transparent),inset 0 1px 0 rgba(255,255,255,.55);
+  font-size:13px;line-height:1.4;text-align:left;outline:none
+}
 .mg-pop *{box-sizing:border-box}
-.mg-top{display:grid;gap:6px;padding:10px 10px 9px;background:color-mix(in srgb,var(--dsw-alias-label-primary) 2.5%,transparent);border-bottom:1px solid var(--mg-line)}
-.mg-search{display:flex;align-items:center;gap:6px;height:30px;padding:0 8px;border:1px solid var(--mg-line);border-radius:6px;background:var(--dsw-alias-bg-base);box-shadow:0 1px 1px rgba(15,18,24,.03)}
-.mg-search-icon{flex:none;opacity:.8}
-.mg-search:focus-within{border-color:color-mix(in srgb,var(--dsw-alias-brand-primary) 45%,transparent);box-shadow:0 0 0 2px color-mix(in srgb,var(--dsw-alias-brand-primary) 14%,transparent)}
-.mg-pop input.mg-search-input{flex:1 1 auto;min-width:0;height:24px;padding:0;margin:0;border:0;border-radius:0;background:transparent;box-shadow:none;appearance:none;-webkit-appearance:none;color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;line-height:24px;outline:none}
+@media (prefers-color-scheme: dark){
+  .mg-pop{
+    --mg-tint-bg:17%;
+    --mg-tint-ring:28%;
+    --mg-chip-tint:18%;
+    box-shadow:0 36px 84px -14px rgba(0,0,0,.72),0 12px 28px -6px rgba(0,0,0,.46),0 0 0 .5px rgba(255,255,255,.12),inset 0 1px 0 rgba(255,255,255,.12)
+  }
+  .mg-seg-thumb{
+    background:color-mix(in srgb,var(--dsw-alias-label-primary) 15%,var(--dsw-alias-bg-base));
+    box-shadow:0 1px 3px rgba(0,0,0,.4),inset 0 .5px 0 rgba(255,255,255,.16)
+  }
+}
+
+.mg-cmd-bar{flex:none;display:flex;align-items:center;gap:9px;height:44px;padding:0 14px;border-bottom:1px solid var(--mg-hair-soft)}
+.mg-search-icon{flex:none;color:var(--dsw-alias-label-secondary);opacity:.72}
+.mg-pop input.mg-search-input{flex:1 1 auto;min-width:0;height:28px;padding:0;margin:0;border:0;border-radius:0;background:transparent;box-shadow:none;appearance:none;-webkit-appearance:none;color:var(--dsw-alias-label-primary);font:inherit;font-size:13.5px;letter-spacing:-.01em;line-height:28px;outline:none}
 .mg-pop input.mg-search-input::-webkit-search-cancel-button{display:none}
-.mg-pop input.mg-search-input::placeholder{color:var(--dsw-alias-label-secondary)}
-.mg-chips{display:flex;align-items:center;flex-wrap:wrap;gap:4px;padding:0 0}
-.mg-chip{flex:none;height:24px;padding:0 9px;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:12px;line-height:24px;cursor:pointer;white-space:nowrap}
-.mg-chip:hover{background:color-mix(in srgb,var(--dsw-alias-label-primary) 4%,transparent);color:var(--dsw-alias-label-primary)}
-.mg-chip.is-on{background:color-mix(in srgb,var(--dsw-alias-label-primary) 10%,transparent);color:var(--dsw-alias-label-primary);font-weight:500}
+.mg-pop input.mg-search-input::placeholder{color:var(--dsw-alias-label-secondary);opacity:.68}
+.mg-kbd{flex:none;font-size:10px;font-weight:550;color:var(--dsw-alias-label-secondary);opacity:.72;padding:2px 6px;border-radius:5px;background:var(--mg-track);letter-spacing:.04em;user-select:none}
+
+.mg-chips{flex:none;display:flex;align-items:center;gap:6px;padding:8px 10px 4px}
+.mg-chips-pin{flex:none;display:flex;align-items:center;gap:6px}
+.mg-chips-divider{width:1px;height:14px;background:var(--mg-hair);flex:none}
+.mg-chips-rail-wrap{position:relative;flex:1;min-width:0;display:flex;align-items:center}
+.mg-chips-rail{display:flex;align-items:center;gap:4px;overflow-x:auto;scroll-behavior:smooth;scrollbar-width:none;padding:1px 14px 1px 2px;mask-image:linear-gradient(to right,transparent 0,black 8px,black calc(100% - 22px),transparent 100%);-webkit-mask-image:linear-gradient(to right,transparent 0,black 8px,black calc(100% - 22px),transparent 100%)}
+.mg-chips-rail.at-start{mask-image:linear-gradient(to right,black 0,black calc(100% - 22px),transparent 100%);-webkit-mask-image:linear-gradient(to right,black 0,black calc(100% - 22px),transparent 100%)}
+.mg-chips-rail.at-end{mask-image:linear-gradient(to right,transparent 0,black 10px,black 100%);-webkit-mask-image:linear-gradient(to right,transparent 0,black 10px,black 100%)}
+.mg-chips-rail.no-overflow{mask-image:none;-webkit-mask-image:none;padding-right:2px}
+.mg-chips-rail::-webkit-scrollbar{display:none}
+.mg-chip{flex:none;display:inline-flex;align-items:center;gap:5px;height:25px;padding:0 10px;border:0;border-radius:999px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:11.5px;font-weight:480;line-height:25px;cursor:pointer;white-space:nowrap}
+.mg-chip:hover{background:var(--mg-hover);color:var(--dsw-alias-label-primary)}
+.mg-chip.is-on{background:var(--mg-active);color:var(--dsw-alias-label-primary);font-weight:580;box-shadow:inset 0 0 0 .5px var(--mg-hair)}
+.mg-chip.is-brand.is-on{background:color-mix(in srgb,var(--mg-brand) var(--mg-chip-tint),transparent);color:var(--mg-brand);box-shadow:inset 0 0 0 .5px color-mix(in srgb,var(--mg-brand) var(--mg-tint-ring),transparent)}
+.mg-chip-dot{flex:none;width:5.5px;height:5.5px;border-radius:999px;background:var(--mg-brand);opacity:.8}
+.mg-chip.is-on .mg-chip-dot{opacity:1}
 .mg-chip:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px}
-.mg-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 4px 6px}
-.mg-sect{display:flex;align-items:center;gap:6px;padding:12px 8px 5px;color:var(--dsw-alias-label-secondary);font-size:11px;letter-spacing:.01em}
-.mg-scroll>.mg-sect:first-child{padding-top:8px}
-.mg-sect b{font-weight:500}
-.mg-sect .n{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums}
-.mg-row{position:relative;display:flex;align-items:center;gap:8px;height:32px;padding:0 6px 0 10px;border-radius:6px;cursor:pointer;box-sizing:border-box}
-.mg-row:hover{background:color-mix(in srgb,var(--dsw-alias-label-primary) 4%,transparent)}
-.mg-row.is-active{background:color-mix(in srgb,var(--dsw-alias-label-primary) 7%,transparent)}
-.mg-row[aria-selected="true"]{background:color-mix(in srgb,var(--dsw-alias-brand-primary) 6%,transparent)}
-.mg-row[aria-selected="true"]:hover{background:color-mix(in srgb,var(--dsw-alias-brand-primary) 9%,transparent)}
-.mg-row[aria-selected="true"]::before{content:"";position:absolute;left:2px;top:50%;transform:translateY(-50%);width:2px;height:16px;border-radius:1px;background:var(--dsw-alias-brand-primary)}
-.mg-row[aria-selected="true"] .mg-name{font-weight:500}
-.mg-check{flex:none;width:14px;display:flex;align-items:center;justify-content:center;color:var(--dsw-alias-brand-primary)}
-.mg-name{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mg-star{flex:none;display:flex;align-items:center;justify-content:center;width:24px;height:24px;border:0;border-radius:4px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer;opacity:.7}
-.mg-row:hover .mg-star,.mg-star.is-on{opacity:1}
-.mg-star:hover{background:color-mix(in srgb,var(--dsw-alias-label-primary) 6%,transparent)}
-.mg-star.is-on{color:var(--dsw-alias-warn-primary,#d99a2b)}
+
+.mg-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:6px 7px 8px}
+.mg-scroll::-webkit-scrollbar,.mg-list-scroll::-webkit-scrollbar,.mg-nav::-webkit-scrollbar{width:4px}
+.mg-scroll::-webkit-scrollbar-track,.mg-list-scroll::-webkit-scrollbar-track,.mg-nav::-webkit-scrollbar-track{background:transparent}
+.mg-scroll::-webkit-scrollbar-thumb,.mg-list-scroll::-webkit-scrollbar-thumb,.mg-nav::-webkit-scrollbar-thumb{background:var(--mg-hair);border-radius:999px}
+
+.mg-sect{display:flex;align-items:center;gap:6px;padding:10px 10px 4px;color:var(--dsw-alias-label-secondary);opacity:.78;font-size:10.5px;font-weight:560;letter-spacing:.04em;text-transform:uppercase}
+.mg-scroll>.mg-sect:first-child{padding-top:4px}
+.mg-sect b{font-weight:560}
+.mg-sect .n{font-variant-numeric:tabular-nums;opacity:.75}
+
+.mg-row{position:relative;display:flex;align-items:center;gap:9px;height:38px;padding:0 7px 0 9px;border-radius:10px;cursor:pointer;box-sizing:border-box}
+.mg-row:hover{background:var(--mg-hover)}
+.mg-row.is-active{background:var(--mg-active);box-shadow:inset 0 0 0 .5px var(--mg-hair)}
+.mg-row[aria-selected="true"]{background:color-mix(in srgb,var(--dsw-alias-label-primary) 7.5%,transparent);box-shadow:inset 0 .5px 0 rgba(255,255,255,.22)}
+.mg-row[aria-selected="true"]:hover{background:color-mix(in srgb,var(--dsw-alias-label-primary) 9.5%,transparent)}
+.mg-row[aria-selected="true"] .mg-name{font-weight:580;color:var(--dsw-alias-label-primary)}
+
+.mg-monogram{flex:none;min-width:22px;height:19px;padding:0 4px;border-radius:6px;background:color-mix(in srgb,var(--mg-brand,var(--dsw-alias-label-secondary)) var(--mg-tint-bg),transparent);box-shadow:inset 0 0 0 .5px color-mix(in srgb,var(--mg-brand,var(--dsw-alias-label-secondary)) var(--mg-tint-ring),transparent);color:var(--mg-brand,var(--dsw-alias-label-secondary));font-size:9px;font-weight:680;letter-spacing:-.01em;display:inline-flex;align-items:center;justify-content:center;user-select:none}
+
+.mg-name{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;letter-spacing:-.012em;color:var(--dsw-alias-label-primary)}
+.mg-reason-glyph{flex:none;display:inline-flex;align-items:center;color:var(--dsw-alias-label-secondary);opacity:.62}
+.mg-row[aria-selected="true"] .mg-reason-glyph{color:var(--dsw-alias-brand-primary);opacity:.92}
+
+.mg-desc{flex:0 1 auto;min-width:0;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;color:var(--dsw-alias-label-secondary);opacity:.78;font-size:11.5px}
+.mg-prov{flex:none;color:var(--dsw-alias-label-secondary);opacity:.78;font-size:11px;white-space:nowrap;text-align:right}
+.mg-check{flex:none;width:15px;display:flex;align-items:center;justify-content:center;color:var(--dsw-alias-brand-primary)}
+
+.mg-star{flex:none;display:flex;align-items:center;justify-content:center;width:24px;height:24px;border:0;border-radius:7px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer;opacity:0}
+.mg-row:hover .mg-star,.mg-row:focus-within .mg-star,.mg-star.is-on{opacity:1}
+.mg-star:hover{background:var(--mg-active);color:var(--dsw-alias-label-primary)}
+.mg-star:active{transform:scale(.92)}
+.mg-star.is-on{color:var(--dsw-alias-warn-primary,#d98a1c)}
 .mg-star:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px}
-.mg-sep{height:1px;margin:4px 0;background:var(--dsw-alias-border-l2)}
-.mg-more{display:flex;align-items:center;gap:6px;width:100%;height:34px;margin:2px 0 4px;padding:0 8px;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:12px;cursor:pointer;text-align:left}
-.mg-more svg{flex:none;margin-left:auto}
-.mg-more:hover{background:color-mix(in srgb,var(--dsw-alias-label-primary) 4%,transparent);color:var(--dsw-alias-label-primary)}
-.mg-foot{flex:none;display:flex;align-items:center;gap:8px;padding:9px 12px;border-top:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base)}
-.mg-foot-label{color:var(--dsw-alias-label-secondary);font-size:11.5px;letter-spacing:.01em}
-.mg-foot-label.is-right{margin-left:auto}
-.mg-foot-label:first-child{margin-right:auto}
-.mg-foot-cur{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-secondary);font-size:11.5px}
-.mg-foot-cur b{font-weight:500;color:var(--dsw-alias-label-primary)}
-.mg-foot-note{color:var(--dsw-alias-label-secondary);font-size:11px;margin-left:auto}
-.mg-foot-more{flex:none;display:flex;align-items:center;justify-content:center;margin-left:auto;width:24px;height:24px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}
-.mg-foot-more svg{flex:none}
-.mg-foot-more:hover{background:color-mix(in srgb,var(--dsw-alias-label-primary) 6%,transparent);color:var(--dsw-alias-label-primary)}
-.mg-foot-more:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px}
-.mg-seg{display:inline-flex;align-items:center;gap:1px;padding:2px;border-radius:6px;background:color-mix(in srgb,var(--dsw-alias-label-primary) 5%,transparent)}
-.mg-seg button{height:24px;min-width:34px;padding:0 8px;border:0;border-radius:4px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:11.5px;cursor:pointer}
+
+.mg-foot{flex:none;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px 8px 12px;border-top:1px solid var(--mg-hair-soft);background:var(--mg-dock)}
+.mg-foot-left{display:flex;align-items:center;gap:7px;min-width:0}
+.mg-foot-right{display:flex;align-items:center;gap:8px;flex:none}
+.mg-foot-label{color:var(--dsw-alias-label-secondary);font-size:11px;letter-spacing:.01em;white-space:nowrap}
+.mg-foot-count{color:var(--dsw-alias-label-secondary);opacity:.8;font-size:11px;padding-left:2px;white-space:nowrap}
+.mg-foot-cur{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-secondary);font-size:12px}
+.mg-foot-cur b{font-weight:580;color:var(--dsw-alias-label-primary)}
+.mg-foot-note{color:var(--dsw-alias-label-secondary);opacity:.78;font-size:11px;white-space:nowrap}
+
+.mg-more{flex:none;display:inline-flex;align-items:center;gap:4px;height:26px;padding:0 10px;border:0;border-radius:999px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:11.5px;font-weight:500;cursor:pointer;white-space:nowrap}
+.mg-more:hover{background:var(--mg-hover);color:var(--dsw-alias-label-primary)}
+.mg-more:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px}
+
+.mg-seg{position:relative;display:inline-flex;align-items:center;padding:2px;border-radius:999px;background:var(--mg-track)}
+.mg-seg-thumb{position:absolute;top:2px;bottom:2px;left:0;border-radius:999px;background:var(--dsw-alias-bg-base);box-shadow:0 1px 3px rgba(0,0,0,.12),0 0 0 .5px color-mix(in srgb,var(--dsw-alias-label-primary) 10%,transparent);pointer-events:none;z-index:0;transition:transform 200ms cubic-bezier(.22,1,.36,1),width 200ms cubic-bezier(.22,1,.36,1),opacity 120ms ease}
+.mg-seg button{position:relative;z-index:1;height:22px;min-width:34px;padding:0 8px;border:0;border-radius:999px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap}
 .mg-seg button:hover:not(:disabled){color:var(--dsw-alias-label-primary)}
-.mg-seg button.is-on{background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);box-shadow:0 0 0 1px color-mix(in srgb,var(--dsw-alias-label-primary) 14%,transparent),0 1px 2px rgba(0,0,0,.10)}
+.mg-seg button.is-on{color:var(--dsw-alias-label-primary);font-weight:600}
 .mg-seg button:disabled{opacity:.5;cursor:default}
 .mg-seg button:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px}
-.mg-status{padding:14px 10px;color:var(--dsw-alias-label-secondary);font-size:12px;line-height:1.6;text-align:center}
-.mg-spin{display:inline-block;width:12px;height:12px;border:1.5px solid color-mix(in srgb,var(--dsw-alias-label-secondary) 45%,transparent);border-top-color:var(--dsw-alias-brand-primary);border-radius:50%;flex:none;animation:mg-spin .7s linear infinite}
+
+.mg-status{padding:28px 14px;color:var(--dsw-alias-label-secondary);opacity:.82;font-size:12px;line-height:1.6;text-align:center}
+.mg-status-reset{margin-top:8px;height:26px;padding:0 11px;border:1px solid var(--mg-hair);border-radius:999px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:11.5px;cursor:pointer}
+.mg-status-reset:hover{background:var(--mg-hover);color:var(--dsw-alias-label-primary)}
+
+.mg-spin{display:inline-block;width:12px;height:12px;border:1.5px solid color-mix(in srgb,var(--dsw-alias-label-secondary) 35%,transparent);border-top-color:var(--dsw-alias-brand-primary);border-radius:50%;flex:none;animation:mg-spin .65s linear infinite}
 @keyframes mg-spin{to{transform:rotate(360deg)}}
-.mg-error{display:flex;align-items:center;gap:8px;margin:6px 10px 8px;padding:8px 10px;border:1px solid color-mix(in srgb,var(--dsw-alias-state-error-primary) 26%,transparent);border-radius:6px;background:color-mix(in srgb,var(--dsw-alias-state-error-primary) 10%,transparent);color:var(--dsw-alias-state-error-primary);font-size:12px}
-.mg-error button{margin-left:auto;height:24px;padding:0 8px;border:1px solid currentColor;border-radius:4px;background:transparent;color:inherit;font:inherit;font-size:11px;cursor:pointer}
-.mg-foot-error{padding:6px 12px;border-top:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-state-error-primary);font-size:11px}
+
+.mg-error{display:flex;align-items:center;gap:8px;margin:8px 10px;padding:8px 12px;border:1px solid color-mix(in srgb,var(--dsw-alias-state-error-primary) 24%,transparent);border-radius:10px;background:color-mix(in srgb,var(--dsw-alias-state-error-primary) 9%,transparent);color:var(--dsw-alias-state-error-primary);font-size:12px}
+.mg-error button{margin-left:auto;height:24px;padding:0 10px;border:1px solid currentColor;border-radius:999px;background:transparent;color:inherit;font:inherit;font-size:11px;cursor:pointer}
+.mg-foot-error{display:flex;align-items:center;gap:7px;padding:8px 12px;border-top:1px solid color-mix(in srgb,var(--dsw-alias-state-error-primary) 22%,transparent);background:color-mix(in srgb,var(--dsw-alias-state-error-primary) 8%,transparent);color:var(--dsw-alias-state-error-primary);font-size:11.5px}
+.mg-alert-ico{flex:none}
+
 .mg-pane{width:100%}
-.mg-head{flex:none;display:flex;align-items:center;gap:8px;height:44px;padding:0 10px 0 16px;border-bottom:1px solid var(--dsw-alias-border-l1)}
-.mg-head-title{font-size:13px;font-weight:600;letter-spacing:-.01em}
-.mg-head-actions{margin-left:auto;display:flex;align-items:center;gap:4px}
-.mg-icon-btn{display:flex;align-items:center;justify-content:center;width:24px;height:24px;border:0;border-radius:4px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}
-.mg-icon-btn:hover{background:color-mix(in srgb,var(--dsw-alias-label-primary) 6%,transparent);color:var(--dsw-alias-label-primary)}
+.mg-head-divider{width:1px;height:16px;background:var(--mg-hair-soft);margin:0 3px;flex:none}
+.mg-head-actions{display:flex;align-items:center;gap:3px;flex:none}
+.mg-icon-btn{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:0;border-radius:999px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer;flex:none}
+.mg-icon-btn:hover{background:var(--mg-hover);color:var(--dsw-alias-label-primary)}
 .mg-icon-btn:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px}
+
 .mg-body{flex:1;min-height:0;display:flex}
-.mg-nav{flex:none;width:184px;padding:8px 0;border-right:1px solid var(--dsw-alias-border-l1);overflow-y:auto}
-.mg-nav-item{display:flex;align-items:center;gap:6px;width:calc(100% - 8px);margin:0 4px;height:32px;padding:0 9px;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:12.5px;cursor:pointer;text-align:left}
-.mg-nav-item:hover{background:color-mix(in srgb,var(--dsw-alias-label-primary) 4%,transparent)}
-.mg-nav-item.is-on{background:color-mix(in srgb,var(--dsw-alias-brand-primary) 9%,transparent)}
+.mg-nav{flex:none;width:182px;padding:10px 8px;border-right:1px solid var(--mg-hair-soft);background:var(--mg-rail);overflow-y:auto}
+.mg-nav-item{display:flex;align-items:center;gap:8px;width:100%;height:33px;padding:0 9px;border:0;border-radius:10px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:12.5px;font-weight:480;cursor:pointer;text-align:left}
+.mg-nav-item:hover{background:var(--mg-hover);color:var(--dsw-alias-label-primary)}
+.mg-nav-item.is-on{background:var(--mg-active);box-shadow:inset 0 .5px 0 rgba(255,255,255,.2);color:var(--dsw-alias-label-primary);font-weight:570}
 .mg-nav-item:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:-2px}
-.mg-nav-count{margin-left:auto;color:var(--dsw-alias-label-secondary);font-size:11px;font-variant-numeric:tabular-nums}
-.mg-nav-sep{height:1px;margin:8px 12px;background:var(--dsw-alias-border-l2)}
-.mg-nav-head{padding:12px 12px 5px;color:var(--dsw-alias-label-secondary);font-size:11px;letter-spacing:.02em}
+.mg-nav-ico{flex:none;opacity:.75}
+.mg-nav-item.is-on .mg-nav-ico{opacity:1}
+.mg-nav-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mg-nav-count{margin-left:auto;color:var(--dsw-alias-label-secondary);opacity:.72;font-size:11px;font-variant-numeric:tabular-nums}
+.mg-nav-item.is-on .mg-nav-count{color:var(--dsw-alias-brand-primary);opacity:1}
+.mg-nav-sep{height:1px;margin:10px 6px;background:var(--mg-hair-soft)}
+.mg-nav-head{padding:4px 9px 6px;color:var(--dsw-alias-label-secondary);opacity:.68;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+
 .mg-list{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column}
-.mg-pane-search{flex:none;padding:12px 14px 8px}
-.mg-list-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 8px 8px}
-.mg-group-head{position:sticky;top:0;z-index:1;padding:12px 8px 5px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-secondary);font-size:11px;letter-spacing:.01em}
+.mg-list-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:6px 10px 10px}
+.mg-group-head{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:6px;padding:10px 10px 4px;background:color-mix(in srgb,var(--dsw-alias-bg-base) 96%,transparent);color:var(--dsw-alias-label-secondary);opacity:.86;font-size:10.5px;font-weight:620;letter-spacing:.05em;text-transform:uppercase}
+.mg-group-dot{flex:none;width:6px;height:6px;border-radius:999px;background:var(--mg-brand,var(--dsw-alias-label-secondary))}
 .mg-group-head:first-child{padding-top:4px}
-.mg-pane .mg-row{height:36px}
-.mg-pane .mg-row[aria-selected="true"]::before{left:3px;height:18px}
-.mg-pane .mg-name{font-size:13px}
-.mg-desc{flex:0 1 auto;min-width:0;margin-left:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;color:var(--dsw-alias-label-secondary);font-size:11px;max-width:220px}
-.mg-prov{flex:none;color:var(--dsw-alias-label-secondary);font-size:11px;white-space:nowrap;min-width:84px;text-align:right}
-.mg-tag{flex:none;display:inline-flex;align-items:center;justify-content:center;height:20px;min-width:30px;padding:0 6px;border-radius:4px;background:color-mix(in srgb,var(--dsw-alias-brand-primary) 12%,transparent);color:var(--dsw-alias-label-primary);font-size:11px;line-height:1;font-variant-numeric:tabular-nums}
-@media (prefers-color-scheme: dark){.mg-pop{box-shadow:0 18px 44px rgba(0,0,0,.45),0 2px 8px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.05)}}
-.mg-row,.mg-chip,.mg-nav-item,.mg-more,.mg-seg button,.mg-star,.mg-trigger,.mg-icon-btn{transition:background-color 80ms linear,color 80ms linear,border-color 80ms linear}
-@media (prefers-reduced-motion: no-preference){.mg-pop{animation:mg-in .12s cubic-bezier(.2,.8,.2,1)}}
-@keyframes mg-in{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
-@media (prefers-reduced-motion: reduce){.mg-pop{animation:none}.mg-spin{animation:none}}
+.mg-pane .mg-row{height:40px}
+
+.mg-row,.mg-chip,.mg-nav-item,.mg-more,.mg-seg button,.mg-star,.mg-trigger,.mg-icon-btn{transition:background-color 110ms ease,color 110ms ease,opacity 120ms ease,box-shadow 110ms ease,transform 110ms ease}
+@media (prefers-reduced-motion: no-preference){.mg-pop{animation:mg-in .16s cubic-bezier(.16,1,.3,1)}}
+@keyframes mg-in{from{opacity:0;transform:translateY(5px) scale(.988)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){.mg-pop{animation:none}.mg-spin{animation:none}.mg-seg-thumb{transition:none}}
 `
 
     // -------------------------------------------------------------- component
@@ -319,10 +496,14 @@ window.__ModuleLoader__.load({
       const [pos, setPos] = useState(null)
       const [favoriteIds, setFavoriteIds] = useState(() => readIds(FAVORITES_KEY))
       const [recentIds, setRecentIds] = useState(() => readIds(RECENT_KEY))
+      const [thumbStyle, setThumbStyle] = useState(null)
+      const [railEdge, setRailEdge] = useState('no-overflow')
 
       const rootRef = useRef(null)
       const panelRef = useRef(null)
       const searchRef = useRef(null)
+      const segRef = useRef(null)
+      const chipsRailRef = useRef(null)
 
       const current = state && state.current ? state.current : null
       const groups = (state && state.groups) || []
@@ -356,11 +537,14 @@ window.__ModuleLoader__.load({
         const list = []
         for (const group of groups) {
           const providerName = group.id === 'deepseek-account' ? t('provider.account') : group.name
+          const brand = providerBrand(providerName, group.id)
           for (const model of group.models || []) {
             list.push({
               key: rowKey(group.id, model.id),
               providerId: group.id,
               providerName,
+              monogram: brand.mono,
+              brandColor: brand.color,
               model,
               name: model.name || model.id,
               description: model.description || '',
@@ -400,21 +584,17 @@ window.__ModuleLoader__.load({
         [recentIds, rows],
       )
 
-      // The compact chip row is a compact-surface control. Expanding must not
-      // keep a provider hidden behind a chip the expanded panel cannot show.
-      const scoped = useMemo(() => {
-        if (expanded || providerFilter === 'all') return rows
-        return rows.filter((row) => row.providerId === providerFilter)
-      }, [rows, expanded, providerFilter])
-      const visible = useMemo(() => scoped.filter(matches), [scoped, matches])
-
       const providers = useMemo(() => {
         const seen = new Map()
         for (const group of groups) {
           if (!seen.has(group.id)) {
+            const name = group.id === 'deepseek-account' ? t('provider.account') : group.name
+            const brand = providerBrand(name, group.id)
             seen.set(group.id, {
               id: group.id,
-              name: group.id === 'deepseek-account' ? t('provider.account') : group.name,
+              name,
+              monogram: brand.mono,
+              brandColor: brand.color,
               count: rows.filter((row) => row.providerId === group.id).length,
             })
           }
@@ -422,8 +602,18 @@ window.__ModuleLoader__.load({
         return Array.from(seen.values())
       }, [groups, rows, t])
 
+      const multiProvider = providers.length >= 2
+
+      // The compact chip row is a compact-surface control. Expanding must not
+      // keep a provider hidden behind a chip the expanded panel cannot show.
+      const scoped = useMemo(() => {
+        if (expanded || !multiProvider || providerFilter === 'all') return rows
+        return rows.filter((row) => row.providerId === providerFilter)
+      }, [rows, expanded, multiProvider, providerFilter])
+      const visible = useMemo(() => scoped.filter(matches), [scoped, matches])
+
       // Left navigation always answers from the full catalog; a navigation entry
-      // that announces 29 models must be able to show those 29 rows.
+      // that announces N models must be able to show those N rows.
       const paneRows = useMemo(() => {
         if (navKey === 'favorites') return favoriteRows.filter(matches)
         if (navKey === 'recent') return recentRows.filter(matches)
@@ -440,9 +630,6 @@ window.__ModuleLoader__.load({
       const activeRow = keysActive && activeIndex >= 0 ? keyboardRows[activeIndex] : null
       const activeKey = activeRow ? activeRow.key : null
 
-      // The design always shows the search field in the compact popover: the
-      // panel keeps one stable structure whether the catalog is short or long.
-      const showSearch = true
       const showEfforts = efforts.length > 0 && Boolean(currentRow)
       const triggerLabel = currentRow ? currentRow.name : t('trigger.placeholder')
 
@@ -488,17 +675,17 @@ window.__ModuleLoader__.load({
         const rect = trigger.getBoundingClientRect()
         const viewportWidth = window.innerWidth
         const viewportHeight = window.innerHeight
-        const width = Math.min(expanded ? 760 : 340, viewportWidth - 24)
+        const width = Math.min(expanded ? 720 : 356, viewportWidth - 24)
         const gap = 8
         const roomAbove = rect.top - gap - 12
         const roomBelow = viewportHeight - rect.bottom - gap - 12
-        const maxHeight = Math.max(160, Math.min(expanded ? 560 : 480, Math.max(roomAbove, roomBelow)))
+        const maxHeight = Math.round(Math.max(180, Math.min(expanded ? 520 : 480, Math.max(roomAbove, roomBelow))))
         const measured = panel ? panel.getBoundingClientRect().height : 0
-        const height = Math.min(measured > 0 ? measured : maxHeight, maxHeight)
-        let left = rect.right - width
-        left = Math.max(12, Math.min(left, viewportWidth - width - 12))
-        let top = rect.top - gap - height
-        if (top < 12) top = Math.min(rect.bottom + gap, viewportHeight - height - 12)
+        const height = Math.round(Math.min(measured > 0 ? measured : maxHeight, maxHeight))
+        let left = Math.round(rect.right - width)
+        left = Math.max(12, Math.min(left, Math.round(viewportWidth - width - 12)))
+        let top = Math.round(rect.top - gap - height)
+        if (top < 12) top = Math.round(Math.min(rect.bottom + gap, viewportHeight - height - 12))
         top = Math.max(12, top)
         setPos((previous) => {
           if (previous && previous.left === left && previous.top === top && previous.width === width && previous.maxHeight === maxHeight) return previous
@@ -508,7 +695,7 @@ window.__ModuleLoader__.load({
 
       useLayoutEffect(() => {
         if (!open) {
-          setPos(null)
+          setPos((previous) => (previous === null ? previous : null))
           return undefined
         }
         place()
@@ -528,11 +715,74 @@ window.__ModuleLoader__.load({
         }
       }, [open, expanded, place, rows.length, visible.length, query, navKey, providerFilter])
 
-      // Focus: the search field when it exists, the panel otherwise, so the
+      // Measure & slide the segmented-control pill thumb smoothly.
+      useLayoutEffect(() => {
+        if (!open || !showEfforts || !segRef.current) {
+          setThumbStyle((previous) => (previous === null ? previous : null))
+          return
+        }
+        const seg = segRef.current
+        const activeBtn = seg.querySelector('button.is-on')
+        if (!activeBtn) {
+          setThumbStyle((previous) => (previous === null ? previous : null))
+          return
+        }
+        const nextWidth = activeBtn.offsetWidth + 'px'
+        const nextTransform = 'translateX(' + activeBtn.offsetLeft + 'px)'
+        setThumbStyle((previous) => {
+          if (previous && previous.width === nextWidth && previous.transform === nextTransform) return previous
+          return { width: nextWidth, transform: nextTransform, opacity: 1 }
+        })
+      }, [open, expanded, showEfforts, effectiveEffort, efforts.length])
+
+      // Keep horizontal provider rail edge-fade mask synchronized.
+      const syncRailFade = useCallback(() => {
+        const rail = chipsRailRef.current
+        if (!rail) return
+        const maxScroll = rail.scrollWidth - rail.clientWidth
+        let next = 'middle'
+        if (maxScroll <= 2) next = 'no-overflow'
+        else if (rail.scrollLeft <= 2) next = 'at-start'
+        else if (rail.scrollLeft >= maxScroll - 2) next = 'at-end'
+        setRailEdge((previous) => (previous === next ? previous : next))
+      }, [])
+
+      useLayoutEffect(() => {
+        if (!open || expanded || !multiProvider) return undefined
+        syncRailFade()
+        const rail = chipsRailRef.current
+        let observer = null
+        if (rail && typeof ResizeObserver !== 'undefined') {
+          observer = new ResizeObserver(() => syncRailFade())
+          observer.observe(rail)
+        }
+        return () => {
+          if (observer) observer.disconnect()
+        }
+      }, [open, expanded, multiProvider, providers.length, syncRailFade])
+
+      const onChipsWheel = useCallback((event) => {
+        const rail = chipsRailRef.current
+        if (!rail || rail.scrollWidth <= rail.clientWidth + 2) return
+        if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+          event.preventDefault()
+          rail.scrollLeft += event.deltaY
+          syncRailFade()
+        }
+      }, [syncRailFade])
+
+      // Keep keyboard-highlighted row visible when navigating long catalogs.
+      useEffect(() => {
+        if (!open || !keysActive || !activeKey || !panelRef.current) return
+        const node = panelRef.current.querySelector('.mg-row.is-active')
+        if (node && typeof node.scrollIntoView === 'function') {
+          node.scrollIntoView({ block: 'nearest' })
+        }
+      }, [open, keysActive, activeKey])
+
+      // Focus: the search field when expanded, the panel otherwise, so the
       // keyboard handler is always reachable without a mouse.
       useEffect(() => {
-        // Wait for the measured position: until `pos` exists the panel is
-        // rendered hidden, and a hidden element cannot take focus.
         if (!open || !pos) return
         if (expanded && searchRef.current) searchRef.current.focus()
         else if (panelRef.current) panelRef.current.focus()
@@ -664,8 +914,7 @@ window.__ModuleLoader__.load({
               const currentIndex = keyboardRows.findIndex((row) => row.key === currentKey)
               start = currentIndex < 0 ? (delta > 0 ? -1 : 0) : currentIndex
             }
-            const next = (start + delta + keyboardRows.length) % keyboardRows.length
-            return next
+            return (start + delta + keyboardRows.length) % keyboardRows.length
           })
           return
         }
@@ -700,10 +949,11 @@ window.__ModuleLoader__.load({
 
       // ------------------------------------------------------------- rendering
 
-      const renderRow = (row, index, options) => {
+      const renderRow = (row, options) => {
         const selected = row.key === currentKey
+        const isPending = pendingKey === row.key
         const favorited = favoriteSet.has(row.key)
-        const showEffortTag = options.withEffort && selected && effortName
+        const hasReasoning = Boolean(row.reasoning && Array.isArray(row.reasoning.efforts) && row.reasoning.efforts.length > 0)
         const classes = ['mg-row']
         if (activeKey !== null && row.key === activeKey) classes.push('is-active')
         return h('div', {
@@ -715,23 +965,27 @@ window.__ModuleLoader__.load({
           'data-model-id': row.model.id,
           onClick: () => submit(row),
         },
-        h('span', { className: 'mg-check' }, selected ? iconCheck() : null),
+        options.withMonogram
+          ? h('span', { className: 'mg-monogram', style: { '--mg-brand': row.brandColor }, title: row.providerName }, row.monogram)
+          : null,
         h('span', { className: 'mg-name', title: row.name }, row.name),
-        options.withDescription && row.description ? h('span', { className: 'mg-desc' }, row.description) : null,
+        hasReasoning ? h('span', { className: 'mg-reason-glyph', title: t('effort.supported') }, iconSpark()) : null,
+        options.withDescription && row.description ? h('span', { className: 'mg-desc', title: row.description }, row.description) : null,
         options.withProvider ? h('span', { className: 'mg-prov' }, row.providerName) : null,
-        showEffortTag ? h('span', { className: 'mg-tag' }, effortName) : null,
+        h('span', { className: 'mg-check' }, isPending ? h('span', { className: 'mg-spin' }) : (selected ? iconCheck() : null)),
         h('button', {
           type: 'button',
           className: 'mg-star' + (favorited ? ' is-on' : ''),
-          title: t('group.favorites'),
-          'aria-label': t('group.favorites'),
+          title: favorited ? t('favorite.remove') : t('favorite.add'),
+          'aria-label': favorited ? t('favorite.remove') : t('favorite.add'),
           'aria-pressed': favorited ? 'true' : 'false',
           onClick: (event) => { event.stopPropagation(); toggleFavorite(row.key) },
         }, iconStar(favorited)))
       }
 
       const effortSeg = showEfforts
-        ? h('span', { className: 'mg-seg', role: 'group', 'aria-label': t('effort.label') },
+        ? h('span', { ref: segRef, className: 'mg-seg', role: 'group', 'aria-label': t('effort.label') },
+          thumbStyle ? h('span', { className: 'mg-seg-thumb', style: thumbStyle, 'aria-hidden': 'true' }) : null,
           h('button', {
             type: 'button',
             className: effectiveEffort === undefined ? 'is-on' : undefined,
@@ -751,41 +1005,54 @@ window.__ModuleLoader__.load({
 
       const sections = (() => {
         if (expanded) return null
+        if (status === 'loading' && !rows.length) {
+          return [h('div', { key: 'loading', className: 'mg-status' }, h('span', { className: 'mg-spin' }), ' ', t('status.loading'))]
+        }
+        if (!visible.length) {
+          const hasQuery = Boolean(query.trim())
+          return [h('div', { key: 'empty', className: 'mg-status' },
+            h('div', null, rows.length ? t('status.empty') : t('status.emptyCatalog')),
+            hasQuery
+              ? h('button', {
+                type: 'button',
+                className: 'mg-status-reset',
+                onClick: () => { setQuery(''); setActiveIndex(-1); setKeysActive(false) },
+              }, t('search.clear'))
+              : null)]
+        }
         const out = []
         // A model shown under 我的收藏 / 最近使用 must not be repeated again in
         // the full list below, otherwise the same row appears twice and both
         // copies look selected at the same time.
         const placed = new Set()
-        if (providerFilter === 'all') {
+        if (providerFilter === 'all' && !query.trim()) {
           const favorites = favoriteRows.filter(matches)
-          if (favoriteRows.length && favorites.length) {
+          if (favorites.length) {
             out.push(h('div', { key: 'sect-fav', className: 'mg-sect' },
-              h('b', null, t('group.favorites')), h('span', { className: 'n' }, String(favoriteRows.length))))
+              h('b', null, t('group.favorites')), h('span', { className: 'n' }, String(favorites.length))))
             favorites.forEach((row) => {
               placed.add(row.key)
-              out.push(renderRow(row, -1, { withProvider: true, suffix: ':fav' }))
+              out.push(renderRow(row, { withMonogram: multiProvider, suffix: ':fav' }))
             })
           }
-          const recent = recentRows.filter(matches)
+          const recent = recentRows.filter((row) => !placed.has(row.key) && matches(row))
           if (recent.length) {
             out.push(h('div', { key: 'sect-recent', className: 'mg-sect' },
               h('b', null, t('group.recent')), h('span', { className: 'n' }, String(recent.length))))
             recent.forEach((row) => {
               placed.add(row.key)
-              out.push(renderRow(row, -1, { withProvider: true, suffix: ':recent' }))
+              out.push(renderRow(row, { withMonogram: multiProvider, suffix: ':recent' }))
             })
           }
         }
         const rest = visible.filter((row) => !placed.has(row.key))
-        out.push(h('div', { key: 'sect-all', className: 'mg-sect' },
-          h('b', null, t('group.all')), h('span', { className: 'n' }, String(rest.length))))
-        rest.forEach((row, index) => out.push(renderRow(row, index, { withProvider: true })))
+        if (rest.length) {
+          out.push(h('div', { key: 'sect-all', className: 'mg-sect' },
+            h('b', null, t('group.all')), h('span', { className: 'n' }, String(rest.length))))
+          rest.forEach((row) => out.push(renderRow(row, { withMonogram: multiProvider && providerFilter === 'all' })))
+        }
         return out
       })()
-
-      const compactBody = sections && sections.length
-        ? sections
-        : [h('div', { key: 'empty', className: 'mg-status' }, t('status.empty'))]
 
       const panelStyle = { width: '100%', maxHeight: pos ? pos.maxHeight : undefined }
 
@@ -798,55 +1065,88 @@ window.__ModuleLoader__.load({
           tabIndex: -1,
           onKeyDown: onSearchKeyDown,
         },
-        h('div', { className: 'mg-top' },
-          showSearch
-            ? h('div', { className: 'mg-search' },
-              iconSearch(),
-              h('input', {
-                ref: searchRef,
-                className: 'mg-search-input',
-                type: 'search',
-                value: query,
-                placeholder: t('search.placeholder'),
-                'aria-label': t('search.placeholder'),
-                onChange: (event) => { setQuery(event.target.value); setActiveIndex(-1); setKeysActive(false) },
-                onCompositionStart: () => {},
-              }))
+        h('div', { className: 'mg-cmd-bar' },
+          iconSearch(),
+          h('input', {
+            ref: searchRef,
+            className: 'mg-search-input',
+            type: 'search',
+            value: query,
+            placeholder: t('search.placeholder'),
+            'aria-label': t('search.placeholder'),
+            onChange: (event) => { setQuery(event.target.value); setActiveIndex(-1); setKeysActive(false) },
+            onCompositionStart: () => {},
+          }),
+          query
+            ? h('button', {
+              type: 'button',
+              className: 'mg-icon-btn',
+              title: t('search.clear'),
+              'aria-label': t('search.clear'),
+              onClick: () => { setQuery(''); setActiveIndex(-1); setKeysActive(false); if (searchRef.current) searchRef.current.focus() },
+            }, iconClose())
+            : h('span', { className: 'mg-kbd', 'aria-hidden': 'true' }, 'ESC')),
+        multiProvider
+          ? h('div', { className: 'mg-chips' },
+            h('div', { className: 'mg-chips-pin' },
+              h('button', {
+                type: 'button',
+                className: 'mg-chip' + (providerFilter === 'all' ? ' is-on' : ''),
+                onClick: () => { setProviderFilter('all'); setNavKey('all') },
+              }, t('nav.all')),
+              h('span', { className: 'mg-chips-divider', 'aria-hidden': 'true' })),
+            h('div', { className: 'mg-chips-rail-wrap' },
+              h('div', {
+                ref: chipsRailRef,
+                className: 'mg-chips-rail' + (railEdge !== 'middle' ? ' ' + railEdge : ''),
+                onWheel: onChipsWheel,
+                onScroll: syncRailFade,
+              },
+              providers.map((provider) => h('button', {
+                key: 'chip:' + provider.id,
+                type: 'button',
+                className: 'mg-chip is-brand' + (providerFilter === provider.id ? ' is-on' : ''),
+                style: { '--mg-brand': provider.brandColor },
+                title: provider.name,
+                onClick: (event) => {
+                  setProviderFilter(provider.id)
+                  setNavKey('all')
+                  if (event.currentTarget && typeof event.currentTarget.scrollIntoView === 'function') {
+                    event.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' })
+                  }
+                },
+              },
+              h('span', { className: 'mg-chip-dot', 'aria-hidden': 'true' }),
+              provider.name)))))
+          : null,
+        h('div', { className: 'mg-scroll' },
+          status === 'error' && state && state.error
+            ? h('div', { className: 'mg-error', role: 'alert' }, tidyDetail(state.error),
+              h('button', { type: 'button', onClick: () => load() }, t('action.retry')))
             : null,
-          h('div', { className: 'mg-chips' },
-            h('button', {
-              type: 'button',
-              className: 'mg-chip' + (providerFilter === 'all' ? ' is-on' : ''),
-              onClick: () => { setProviderFilter('all'); setNavKey('all') },
-            }, t('nav.all')),
-            providers.map((provider) => h('button', {
-              key: 'chip:' + provider.id,
-              type: 'button',
-              className: 'mg-chip' + (providerFilter === provider.id ? ' is-on' : ''),
-              onClick: () => { setProviderFilter(provider.id); setNavKey('all') },
-            }, provider.name)))),
-        h('div', { className: 'mg-scroll' }, compactBody),
-        h('div', { className: 'mg-sep' }),
-        h('button', { type: 'button', className: 'mg-more', onClick: expandPanel },
-          t('action.expand'), iconArrowRight()),
+          sections),
         h('div', { className: 'mg-foot' },
-          h('span', { className: 'mg-foot-label' }, t('effort.label')),
-          effortSeg,
+          effortSeg
+            ? h('div', { className: 'mg-foot-left' }, effortSeg)
+            : h('span', { className: 'mg-foot-count' }, t('count.available', { count: rows.length })),
           h('button', {
             type: 'button',
-            className: 'mg-foot-more',
-            title: t('action.expand'),
-            'aria-label': t('action.expand'),
+            className: 'mg-more',
+            title: t('action.expandTitle'),
+            'aria-label': t('action.expandTitle'),
             onClick: expandPanel,
-          }, iconExpand())),
-        switchError ? h('div', { className: 'mg-foot-error', role: 'alert' }, switchError.message) : null)
+          }, t('action.expand'), iconArrowUpRight())),
+        switchError
+          ? h('div', { className: 'mg-foot-error', role: 'alert' }, iconAlert(), h('span', null, switchError.message))
+          : null)
 
-      const navItem = (key, label, count) => h('button', {
+      const navItem = (key, label, count, iconNode) => h('button', {
         key: 'nav:' + key,
         type: 'button',
         className: 'mg-nav-item' + (navKey === key ? ' is-on' : ''),
         onClick: () => { setNavKey(key); setActiveIndex(-1); setKeysActive(false) },
       },
+      iconNode,
       h('span', { className: 'mg-nav-label' }, label),
       h('span', { className: 'mg-nav-count' }, String(count)))
 
@@ -855,18 +1155,37 @@ window.__ModuleLoader__.load({
           return h('div', { className: 'mg-status' }, h('span', { className: 'mg-spin' }), ' ', t('status.loading'))
         }
         if (!paneRows.length) {
-          const hasCatalog = rows.length > 0
-          return h('div', { className: 'mg-status' }, hasCatalog ? t('status.empty') : t('status.emptyCatalog'))
-        }
-        const out = []
-        let lastProvider = null
-        for (const row of paneRows) {
-          if (row.providerId !== lastProvider) {
-            lastProvider = row.providerId
-            out.push(h('div', { key: 'head:' + row.providerId, className: 'mg-group-head' },
-              h('b', null, row.providerName)))
+          if (query.trim()) {
+            return h('div', { className: 'mg-status' },
+              h('div', null, t('status.empty')),
+              h('button', {
+                type: 'button',
+                className: 'mg-status-reset',
+                onClick: () => { setQuery(''); setActiveIndex(-1); setKeysActive(false) },
+              }, t('search.clear')))
           }
-          out.push(renderRow(row, -1, { withDescription: true, withProvider: true }))
+          if (!rows.length) return h('div', { className: 'mg-status' }, t('status.emptyCatalog'))
+          if (navKey === 'favorites') return h('div', { className: 'mg-status' }, t('status.emptyFavorites'))
+          if (navKey === 'recent') return h('div', { className: 'mg-status' }, t('status.emptyRecent'))
+          return h('div', { className: 'mg-status' }, t('status.empty'))
+        }
+        const isGrouped = navKey === 'all' || navKey.indexOf('provider:') === 0
+        const out = []
+        if (isGrouped) {
+          let lastProvider = null
+          for (const row of paneRows) {
+            if (row.providerId !== lastProvider) {
+              lastProvider = row.providerId
+              out.push(h('div', { key: 'head:' + row.providerId, className: 'mg-group-head', style: { '--mg-brand': row.brandColor } },
+                h('span', { className: 'mg-group-dot', 'aria-hidden': 'true' }),
+                h('b', null, row.providerName)))
+            }
+            out.push(renderRow(row, { withDescription: true, withMonogram: false, withProvider: false }))
+          }
+        } else {
+          for (const row of paneRows) {
+            out.push(renderRow(row, { withDescription: true, withMonogram: multiProvider, withProvider: false }))
+          }
         }
         return out
       })()
@@ -880,57 +1199,77 @@ window.__ModuleLoader__.load({
           tabIndex: -1,
           onKeyDown: onSearchKeyDown,
         },
-        h('div', { className: 'mg-head' },
-          h('span', { className: 'mg-head-title' }, t('nav.all')),
+        h('div', { className: 'mg-cmd-bar' },
+          iconSearch(),
+          h('input', {
+            ref: searchRef,
+            className: 'mg-search-input',
+            type: 'search',
+            value: query,
+            placeholder: t('search.placeholderWide'),
+            'aria-label': t('search.placeholderWide'),
+            onChange: (event) => { setQuery(event.target.value); setActiveIndex(-1); setKeysActive(false) },
+            onCompositionStart: () => {},
+          }),
+          query
+            ? h('button', {
+              type: 'button',
+              className: 'mg-icon-btn',
+              title: t('search.clear'),
+              'aria-label': t('search.clear'),
+              onClick: () => { setQuery(''); setActiveIndex(-1); setKeysActive(false); if (searchRef.current) searchRef.current.focus() },
+            }, iconClose())
+            : null,
+          h('span', { className: 'mg-head-divider', 'aria-hidden': 'true' }),
           h('span', { className: 'mg-head-actions' },
             h('button', { type: 'button', className: 'mg-icon-btn', title: t('action.collapse'), 'aria-label': t('action.collapse'), onClick: collapsePanel }, iconCollapse()),
             h('button', { type: 'button', className: 'mg-icon-btn', title: t('action.close'), 'aria-label': t('action.close'), onClick: () => { close() } }, iconClose()))),
         h('div', { className: 'mg-body' },
           h('div', { className: 'mg-nav' },
-            navItem('all', t('nav.all'), rows.length),
-            navItem('favorites', t('nav.favorites'), favoriteRows.length),
-            navItem('recent', t('nav.recent'), recentRows.length),
+            navItem('all', t('nav.all'), rows.length, iconGrid()),
+            navItem('favorites', t('nav.favorites'), favoriteRows.length, h('span', { className: 'mg-nav-ico' }, iconStar(false))),
+            navItem('recent', t('nav.recent'), recentRows.length, iconClock()),
             h('div', { key: 'nav-sep', className: 'mg-nav-sep' }),
             h('div', { key: 'nav-head', className: 'mg-nav-head' }, t('nav.providers')),
-            providers.map((provider) => navItem('provider:' + provider.id, provider.name, provider.count))),
+            providers.map((provider) => navItem(
+              'provider:' + provider.id,
+              provider.name,
+              provider.count,
+              h('span', { className: 'mg-monogram', style: { '--mg-brand': provider.brandColor }, title: provider.name }, provider.monogram),
+            ))),
           h('div', { className: 'mg-list' },
-            h('div', { className: 'mg-pane-search' },
-              h('div', { className: 'mg-search' },
-                iconSearch(),
-                h('input', {
-                  ref: searchRef,
-                  className: 'mg-search-input',
-                  type: 'search',
-                  value: query,
-                  placeholder: t('search.placeholderWide'),
-                  'aria-label': t('search.placeholderWide'),
-                  onChange: (event) => { setQuery(event.target.value); setActiveIndex(-1); setKeysActive(false) },
-                }))),
             h('div', { className: 'mg-list-scroll' },
               status === 'error' && state && state.error
                 ? h('div', { className: 'mg-error', role: 'alert' }, tidyDetail(state.error),
                   h('button', { type: 'button', onClick: () => load() }, t('action.retry')))
                 : null,
-              paneBody),
-            h('div', { className: 'mg-foot' },
-              currentRow
-                ? h('span', { className: 'mg-foot-cur' }, t('current.label') + ' ', h('b', null, currentRow.name))
-                : null,
-              effortSeg ? h('span', { className: 'mg-foot-label is-right' }, t('effort.label')) : null,
-              effortSeg,
-              h('span', { className: 'mg-foot-note' }, t('effort.note'))),
-            switchError ? h('div', { className: 'mg-foot-error', role: 'alert' }, switchError.message) : null)))
+              paneBody))),
+        h('div', { className: 'mg-foot' },
+          h('div', { className: 'mg-foot-left' },
+            currentRow
+              ? h(React.Fragment, null,
+                h('span', { className: 'mg-foot-cur' }, t('current.label')),
+                h('span', { className: 'mg-monogram', style: { '--mg-brand': currentRow.brandColor }, title: currentRow.providerName }, currentRow.monogram),
+                h('span', { className: 'mg-foot-cur' }, h('b', null, currentRow.name)))
+              : h('span', { className: 'mg-foot-count' }, t('count.available', { count: rows.length }))),
+          h('div', { className: 'mg-foot-right' },
+            effortSeg ? h('span', { className: 'mg-foot-label' }, t('effort.label')) : null,
+            effortSeg || h('span', { className: 'mg-foot-note' }, t('effort.none')))),
+        switchError
+          ? h('div', { className: 'mg-foot-error', role: 'alert' }, iconAlert(), h('span', null, switchError.message))
+          : null)
 
       const panel = h('div', {
         className: 'mg-panel-host',
         style: pos
           ? { position: 'fixed', left: pos.left, top: pos.top, width: pos.width, display: 'flex', flexDirection: 'column', zIndex: 2147483000 }
-          : { position: 'fixed', left: -9999, top: 0, width: expanded ? 760 : 340, visibility: 'hidden' },
+          : { position: 'fixed', left: -9999, top: 0, width: expanded ? 720 : 356, visibility: 'hidden' },
       }, expanded ? expandedPanel : compactPanel)
 
       const triggerContent = [
+        multiProvider && currentRow ? h('span', { key: 'dot', className: 'mg-trigger-dot', style: { '--mg-brand': currentRow.brandColor }, 'aria-hidden': 'true' }) : null,
         h('span', { key: 'name', className: 'mg-trigger-name' }, triggerLabel),
-        effortName && reasoning ? h('span', { key: 'effort', className: 'mg-trigger-effort' }, effortName) : null,
+        effortName && reasoning ? h('span', { key: 'effort', className: 'mg-trigger-effort' }, iconSpark(), effortName) : null,
         busy ? h('span', { key: 'spin', className: 'mg-spin' }) : h('span', { key: 'chevron', style: { display: 'flex' } }, iconChevron()),
       ]
 
@@ -945,7 +1284,7 @@ window.__ModuleLoader__.load({
           'aria-expanded': open ? 'true' : 'false',
           'aria-busy': busy ? 'true' : undefined,
           'aria-label': currentRow ? t('trigger.aria', { model: currentRow.name }) : t('trigger.ariaEmpty'),
-          title: currentRow ? currentRow.name + ' · ' + t('effort.label') + ' ' + (effortName || '—') : t('trigger.placeholder'),
+          title: currentRow ? currentRow.name + (effortName && reasoning ? ' · ' + t('effort.label') + ' ' + effortName : '') : t('trigger.placeholder'),
           disabled: Boolean(locked) || !available,
           onClick: () => { if (open) close(); else openPanel() },
         }, triggerContent),
