@@ -48,16 +48,34 @@ model choice into a management console.
 
 ## Install
 
-Requires **DSH 0.2.3-alpha.2 or later**. Verified only on `0.2.3-alpha.2` — this is an
-alpha host, and slot contracts can change between releases.
+Requires **DSH 0.2.3-alpha.2 or later**, plus `git` on your PATH. Verified only on
+`0.2.3-alpha.2` — this is an alpha host, and slot contracts can change between releases.
+
+### Straight from this repository — one command
 
 ```sh
-# from a git checkout
-git clone https://github.com/<you>/dsh-model-glance.git
-dsh plugin --profile desktop add /absolute/path/to/dsh-model-glance
+dsh plugin --profile desktop add https://github.com/DavidLiu12-code/dsh-model-glance.git
 ```
 
-Then fully quit and reopen DSH. A new conversation shows the new control in the composer.
+That is the whole install. Hand the repository URL and that command to an agent and it can
+do it; nothing else is needed. pnpm clones the repository into your profile, the package's
+`cordis.patch.yml` adds the plugin to the bundle, and it activates on the next start. There
+is no build step and no dependency install — the client half is plain JavaScript that
+borrows React from the host at runtime.
+
+Then **fully quit and reopen DSH**. A new conversation shows the new control in the
+composer.
+
+To update, run the same command again (it re-resolves the default branch and records the
+new commit). If your network needs a proxy, `dsh plugin` inherits `HTTP_PROXY` /
+`HTTPS_PROXY` from the shell you run it in.
+
+### From a local checkout
+
+```sh
+git clone https://github.com/DavidLiu12-code/dsh-model-glance.git
+dsh plugin --profile desktop add /absolute/path/to/dsh-model-glance
+```
 
 To remove it:
 

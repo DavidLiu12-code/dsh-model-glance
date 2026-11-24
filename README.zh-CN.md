@@ -29,14 +29,26 @@ ModelGlance 把输入框里那个小模型按钮换成一个两段式选择器�
 
 ## 安装
 
-需要 **DSH 0.2.3-alpha.2 或更高**。仅在 `0.2.3-alpha.2` 上验证过 —— 宿主处于 alpha 通道，slot 契约可能随版本变化。
+需要 **DSH 0.2.3-alpha.2 或更高**，以及 PATH 里的 `git`。仅在 `0.2.3-alpha.2` 上验证过 —— 宿主处于 alpha 通道，slot 契约可能随版本变化。
+
+### 直接从仓库装 —— 一条命令
 
 ```sh
-git clone https://github.com/<你的用户名>/dsh-model-glance.git
-dsh plugin --profile desktop add /绝对路径/dsh-model-glance
+dsh plugin --profile desktop add https://github.com/DavidLiu12-code/dsh-model-glance.git
 ```
 
+**这一步装完就好了。** 把这个仓库链接和这条命令交给 agent，它就能装好，不需要别的东西。pnpm 会把仓库克隆进你的 profile，包里的 `cordis.patch.yml` 把它加进 bundle，下次启动即生效。没有构建步骤，也不用装依赖 —— 客户端半边是纯 JavaScript，React 在运行时由宿主提供。
+
 然后**完全退出并重新打开 DSH**。新会话里输入框就会显示新的模型控件。
+
+升级：再执行一次同样的命令（会重新解析默认分支并记录新提交）。网络需要代理时，`dsh plugin` 会继承当前 shell 的 `HTTP_PROXY` / `HTTPS_PROXY`。
+
+### 从本地目录装
+
+```sh
+git clone https://github.com/DavidLiu12-code/dsh-model-glance.git
+dsh plugin --profile desktop add /绝对路径/dsh-model-glance
+```
 
 卸载：
 
