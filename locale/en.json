@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "ModelGlance",
+    "description": "A refined, lightweight model picker for the composer: search, provider filters, favorites and recent models, with only the reasoning efforts the selected model really advertises.",
+    "detail": "docs/DETAIL.md"
+  }
+}

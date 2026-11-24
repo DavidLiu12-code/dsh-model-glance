@@ -1,0 +1,196 @@
+/* ModelGlance · v2 视觉优化层
+   只覆盖 app.css，不改任何标记结构。
+   七条主线：
+   1 顶部区自成一层（工具条 / 内容分离）
+   2 当前模型：左侧短竖条 + 淡底，替代整行染色
+   3 右侧元信息成一列（提供商 / 档位），数字等宽
+   4 底栏去噪：紧凑态不再重复那句长解释
+   5 展开面板更紧凑（导航 184、行 32、标题栏 44）
+   6 状态页：错误条带描边、空态有节奏
+   7 浮起感与 120ms 入场；深色补一道上缘高光
+   全部颜色来自 tokens.css 的宿主语义变量，派生色用 color-mix。 */
+
+/* ── 1. 顶部区自成一层 ─────────────────────────────── */
+.pop-compact .mg-top {
+  background: var(--bg-layer-1);
+  border-bottom: 1px solid var(--line-hair);
+  padding: 10px 10px 9px;
+}
+.pop-compact .mg-search {
+  background: var(--bg-overlay);
+  border-color: var(--line-hair);
+  box-shadow: 0 1px 1px rgba(15, 18, 24, 0.03);
+}
+.mg-search .i { opacity: 0.8; }
+/* 顶部区已是淡底，chip 的选中底要跟着提亮，避免两层灰叠在一起 */
+.pop-compact .mg-chip.on {
+  background: color-mix(in srgb, var(--label-primary) 10%, transparent);
+}
+
+/* ── 2. 当前模型：左侧短竖条 + 淡底 ─────────────────── */
+.mg-row {
+  position: relative;
+}
+.mg-row[aria-selected="true"] {
+  background: color-mix(in srgb, var(--brand-primary) 6%, transparent);
+}
+.mg-row[aria-selected="true"]:hover {
+  background: color-mix(in srgb, var(--brand-primary) 9%, transparent);
+}
+.mg-row[aria-selected="true"]::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 16px;
+  border-radius: 1px;
+  background: var(--brand-primary);
+}
+.mg-row[aria-selected="true"] .mg-name {
+  font-weight: 500;
+}
+
+/* ── 3. 右侧元信息成一列，数字等宽 ─────────────────── */
+.mg-prov {
+  min-width: 84px;
+}
+.mg-tag {
+  min-width: 30px;
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
+.mg-sect .n,
+.nav-item .cnt {
+  font-variant-numeric: tabular-nums;
+}
+.pop-pane .mg-row {
+  grid-template-columns: 14px minmax(0, 1fr) minmax(0, auto) 84px 30px 24px;
+}
+.pop-pane .mg-row[aria-selected="true"]::before {
+  left: 3px;
+  height: 18px;
+}
+
+/* ── 4. 底栏去噪 ──────────────────────────────────── */
+.pop-compact .mg-effort-note {
+  display: none;
+}
+.mg-effort {
+  padding: 9px 12px;
+  gap: 10px;
+}
+.mg-effort-label {
+  margin-right: auto;
+  font-size: 11.5px;
+  letter-spacing: 0.01em;
+}
+.mg-seg {
+  padding: 2px;
+  gap: 1px;
+}
+.mg-seg button {
+  height: 24px;
+  min-width: 34px;
+  font-size: 11.5px;
+}
+.pane-foot {
+  padding: 9px 14px;
+  gap: 12px;
+}
+.pane-foot .cur {
+  font-size: 11.5px;
+}
+
+/* ── 5. 展开面板更紧凑 ─────────────────────────────── */
+:root {
+  --pane-nav-w: 184px;
+}
+.pane-head {
+  height: 44px;
+  padding: 0 10px 0 16px;
+}
+.pane-title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.pane-nav {
+  padding: 8px 0;
+}
+.pane-nav .grp {
+  padding: 12px 12px 5px;
+  letter-spacing: 0.02em;
+}
+.nav-item {
+  height: 32px;
+  padding: 0 9px;
+  font-size: 12.5px;
+}
+.pane-search {
+  padding: 12px 14px 8px;
+}
+.pane-rows {
+  padding-bottom: 8px;
+}
+
+/* ── 6. 分组标题的节奏（第一个不额外留白） ───────────── */
+.mg-sect {
+  padding: 12px 12px 5px;
+  letter-spacing: 0.01em;
+}
+.mg-list > .mg-sect:first-child {
+  padding-top: 8px;
+}
+
+/* ── 7. 状态页 ────────────────────────────────────── */
+.mg-alert {
+  margin: 6px 10px 8px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--state-error-primary) 26%, transparent);
+}
+.mg-empty {
+  padding: 36px 24px 40px;
+  gap: 8px;
+}
+.mg-empty .t {
+  font-size: 12.5px;
+  font-weight: 500;
+}
+.mg-empty .s {
+  line-height: 1.6;
+  max-width: 36ch;
+}
+
+/* ── 8. 浮起感与入场 ───────────────────────────────── */
+[data-theme="dark"] .popover {
+  box-shadow: var(--shadow-pop), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+@keyframes mg-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.popover {
+  animation: mg-pop-in 120ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.mg-row,
+.mg-chip,
+.nav-item,
+.mg-more,
+.mg-seg button,
+.mg-star,
+.trigger {
+  transition: background-color 80ms linear, color 80ms linear, border-color 80ms linear;
+}
+@media (prefers-reduced-motion: reduce) {
+  .popover {
+    animation: none;
+  }
+}

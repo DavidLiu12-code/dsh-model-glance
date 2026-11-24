@@ -1,0 +1,83 @@
+/* ModelGlance · 设计变量
+   全部颜色语义对齐 DSH 官方 --dsw-alias-* token（bg-base / bg-layer-1 / bg-layer-2 /
+   bg-overlay / border-l1 / border-l2 / brand-primary / label-primary / label-secondary /
+   state-error-primary），派生色用 color-mix 计算，不写死十六进制。 */
+
+:root {
+  /* —— 宿主语义（浅色） —— */
+  --bg-base: #ffffff;
+  --bg-layer-1: #f7f8fa;
+  --bg-layer-2: #f1f3f6;
+  --bg-overlay: #ffffff;
+  --border-l1: #e4e7ec;
+  --border-l2: #eef0f4;
+  --brand-primary: #2f6bed;
+  --label-primary: #1a1c20;
+  --label-secondary: #5f6773;
+  --state-error-primary: #c5362f;
+
+  /* —— 派生（宿主没有的语义，自己算） —— */
+  --fill-hover: color-mix(in srgb, var(--label-primary) 4%, transparent);
+  --fill-selected: color-mix(in srgb, var(--brand-primary) 7%, transparent);
+  --fill-track: color-mix(in srgb, var(--label-primary) 5%, transparent);
+  --fill-sunken: color-mix(in srgb, var(--label-primary) 3%, transparent);
+  --line-hair: color-mix(in srgb, var(--label-primary) 8%, transparent);
+  --shadow-pop: 0 14px 36px rgba(15, 18, 24, 0.10), 0 2px 6px rgba(15, 18, 24, 0.06);
+  --focus-ring: color-mix(in srgb, var(--brand-primary) 45%, transparent);
+
+  /* —— 字 —— */
+  --font-ui: -apple-system, "SF Pro Text", "PingFang SC", "HarmonyOS Sans SC",
+    "Microsoft YaHei", system-ui, sans-serif;
+
+  /* —— 字阶（1.2 比例，一屏不超过 4 档） —— */
+  --fs-11: 11px;
+  --fs-12: 12px;
+  --fs-13: 13px;
+  --fs-14: 14px;
+  --fs-16: 16px;
+
+  /* —— 间距（4 的倍数） —— */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+
+  /* —— 圆角：一套，嵌套时内圆角 = 外圆角 − 内边距 —— */
+  --r-sm: 4px;
+  --r-md: 6px;
+  --r-lg: 8px;
+  --r-xl: 10px;
+
+  /* —— 尺寸 —— */
+  --sidebar-w: 240px;
+  --row-compact: 32px;
+  --row-expanded: 36px;
+  --pop-w: 340px;
+  --pop-max-h: 480px;
+  --pane-w: 760px;
+  --pane-h: 560px;
+  --pane-nav-w: 200px;
+}
+
+[data-theme="dark"] {
+  --bg-base: #16181c;
+  --bg-layer-1: #121417;
+  --bg-layer-2: #1c1f24;
+  --bg-overlay: #1b1e23;
+  --border-l1: #2b2f36;
+  --border-l2: #24272d;
+  --brand-primary: #6b95ff;
+  --label-primary: #e7e9ed;
+  --label-secondary: #99a0aa;
+  --state-error-primary: #f0837b;
+
+  --fill-hover: color-mix(in srgb, #ffffff 5%, transparent);
+  --fill-selected: color-mix(in srgb, var(--brand-primary) 16%, transparent);
+  --fill-track: color-mix(in srgb, #ffffff 7%, transparent);
+  --fill-sunken: color-mix(in srgb, #ffffff 4%, transparent);
+  --line-hair: color-mix(in srgb, #ffffff 8%, transparent);
+  --shadow-pop: 0 18px 44px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.3);
+  --focus-ring: color-mix(in srgb, var(--brand-primary) 55%, transparent);
+}

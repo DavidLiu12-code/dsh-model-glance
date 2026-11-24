@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "ModelGlance 模型选择器",
+    "description": "精致的轻量模型选择器：搜索、按提供商筛选、我的收藏与最近使用，且只显示当前模型真实支持的推理强度。",
+    "detail": "docs/DETAIL.md"
+  }
+}

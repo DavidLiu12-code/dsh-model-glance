@@ -1,0 +1,20 @@
+# Dependencies — a checkout may install React/Playwright to run the suites.
+node_modules/
+pnpm-lock.yaml
+package-lock.json
+
+# Test output — screenshots may show private workspace names and conversations.
+tests/shots/
+
+# Local isolated profiles and backups never belong in the repo.
+.test-home/
+backup/
+
+# Editor and OS noise.
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
+*.tmp
+.vscode/
+.idea/
